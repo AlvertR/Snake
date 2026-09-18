@@ -22,6 +22,7 @@ namespace Snake
         public int Collums { get; set; }
         public int Rows { get; set; }
         public List<Vector2> SnakeBody { get; set; }
+        public SnakeDirection snakeDirection { get; set; } = SnakeDirection.Right;
 
         public void LoadGame()
         {
@@ -39,10 +40,13 @@ namespace Snake
             //Sound hitBallSound = Raylib.LoadSound(soundPath);
             Raylib.SetTargetFPS(this.FPS);
 
-            this.SnakeBody = new List<Vector2> { new Vector2(80,80), new Vector2(80+CellSize, 80) , new Vector2(80+(CellSize*2), 80) };
+            this.SnakeBody = new List<Vector2> { new Vector2(0, CellSize), new Vector2(CellSize, CellSize) , new Vector2(CellSize*2, CellSize) };
+            this.Collums = this.WidthWindow / this.CellSize;
+            this.Rows = this.HeightWindow / this.CellSize;
             while (!Raylib.WindowShouldClose())
             {
                 this.DeltaTime = Raylib.GetFrameTime();
+                InputCheck();
                 Update();
                 Draw();
             }
@@ -56,9 +60,16 @@ namespace Snake
         {
             Raylib.BeginDrawing();
             Raylib.ClearBackground(Color.Black);
+            int i = 0;
             foreach (var item in this.SnakeBody)
             {
                 Raylib.DrawRectangleV(item, new Vector2(this.CellSize, this.CellSize), Color.White);
+                if (SnakeBody.Count -1 == i)
+                {
+                    Vector2 eyePosition = new Vector2(item.X + CellSize/2, item.Y+CellSize/4);
+                    Raylib.DrawRectangleV(eyePosition, new Vector2(this.CellSize / 4, this.CellSize / 4), Color.Black);
+                }
+                i++;
             }
             Raylib.EndDrawing();
         }
@@ -67,23 +78,45 @@ namespace Snake
         int newSeconds = 0;
         private void Update()
         {
-            this.Collums = this.WidthWindow / this.CellSize;
-            this.Rows = this.HeightWindow / this.CellSize;
+            
             
             running += this.DeltaTime;
             newSeconds = (int)running;
 
                 int length = this.SnakeBody.Count()-1;
-                Console.WriteLine("tamaño "+length);
             if(newSeconds > seconds && SnakeBody.Count > 0)
             {
-                
-                this.SnakeBody.Add(new Vector2(SnakeBody[length].X+CellSize, SnakeBody[0].Y));
+                switch (this.snakeDirection) { 
+                    case SnakeDirection.Right:
+                        this.SnakeBody.Add(new Vector2(SnakeBody[length].X + CellSize, SnakeBody[length].Y));
+                        break;
+                    case SnakeDirection.Left:
+                        this.SnakeBody.Add(new Vector2(SnakeBody[length].X - CellSize, SnakeBody[length].Y));
+                        break;
+                    case SnakeDirection.Up:
+                        this.SnakeBody.Add(new Vector2(SnakeBody[length].X, SnakeBody[length].Y - CellSize));
+                        break;
+                    case SnakeDirection.Down:
+                        this.SnakeBody.Add(new Vector2(SnakeBody[length].X, SnakeBody[length].Y + CellSize));
+                        break;
+                    default:
+                        break;
+                }   
                 this.SnakeBody.RemoveAt(0);
                 seconds = newSeconds;
             }
+        }
 
-
+        private void InputCheck()
+        {
+            if (Raylib.IsKeyDown(KeyboardKey.Up) && snakeDirection != SnakeDirection.Down)
+                this.snakeDirection = SnakeDirection.Up;
+            if (Raylib.IsKeyDown(KeyboardKey.Down) && snakeDirection != SnakeDirection.Up)
+                this.snakeDirection = SnakeDirection.Down;
+            if (Raylib.IsKeyDown(KeyboardKey.Left) && snakeDirection != SnakeDirection.Right)
+                this.snakeDirection = SnakeDirection.Left;
+            if (Raylib.IsKeyDown(KeyboardKey.Right) && snakeDirection != SnakeDirection.Left)
+                this.snakeDirection = SnakeDirection.Right;
         }
     }
 }

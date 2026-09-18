@@ -7,4 +7,13 @@
         Up,
         Down,
     };
+
+    public enum GameStatus
+    {
+        Start,
+        Playing,
+        Paused,
+        GameOver,
+        End,
+    }
 }

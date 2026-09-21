@@ -14,6 +14,7 @@
         Playing,
         Paused,
         GameOver,
+        Reset,
         End,
     }
 }

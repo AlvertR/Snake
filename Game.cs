@@ -41,11 +41,11 @@ namespace Snake
             //Raylib.InitAudioDevice();
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
 
-            string fulPathIcon = Path.Combine(basePath, "Resources", "snake-icon.png");
+            string fulPathIcon = Path.Combine(basePath, "Resources", "snake-icon-2.png");
             Image icon = Raylib.LoadImage(fulPathIcon);
-            //Raylib.ImageFormat(ref icon, PixelFormat.UncompressedR8G8B8A8);
-            //Raylib.SetWindowIcon(icon);
-            //Raylib.UnloadImage(icon);
+            Raylib.ImageFormat(ref icon, PixelFormat.UncompressedR8G8B8A8);
+            Raylib.SetWindowIcon(icon);
+            Raylib.UnloadImage(icon);
 
             //string soundPath = Path.Combine(basePath, "Resource", "sound.mp3");
             //Sound hitBallSound = Raylib.LoadSound(soundPath);
@@ -91,9 +91,9 @@ namespace Snake
                         }
                         i++;
                     }
-                    for (int c = 0; c < Grid.GetLength(1); c++)
+                    for (int c = 0; c < Grid.GetLength(0); c++)
                     {
-                        for (int r = 0; r < Grid.GetLength(0); r++)
+                        for (int r = 0; r < Grid.GetLength(1); r++)
                         {
                             if (Grid[c, r] == 1)
                             {
@@ -109,11 +109,13 @@ namespace Snake
                 case GameStatus.GameOver:
                     Raylib.DrawText("Fin del juego", WidthWindow/3, HeightWindow / 4, 42, Color.White);
                     Raylib.DrawText("puntuación: " + Score, WidthWindow/3, HeightWindow / 3, 42, Color.White);
+                    Raylib.DrawText("Presione R para juegar de nuevo", 10, HeightWindow / 2, 42, Color.White);
                     break;
                 case GameStatus.End:
                     Raylib.DrawText("Fin del juego", WidthWindow / 3, HeightWindow / 4, 42, Color.White);
                     Raylib.DrawText("felicidades obtubo la puntuacion mas alta", 10, HeightWindow / 3, 42, Color.White);
-                    Raylib.DrawText("puntuación: " + Score, WidthWindow / 3, HeightWindow / 3, 42, Color.White);
+                    Raylib.DrawText("puntuación: " + Score, WidthWindow / 3, HeightWindow / 2, 42, Color.White);
+                    Raylib.DrawText("Presione R para juegar de nuevo", 10, (HeightWindow / 2)+70, 42, Color.White);
                     break;
                 default:
                     break;
@@ -152,6 +154,7 @@ namespace Snake
                             this.SnakeBody.RemoveAt(0);
                         this.IsEndGrid();
                         this.IsCollision();
+                        this.IsEndGame();
                         this.SetSnakeGrid();
                         MovementTimer = 0;
                     }
@@ -161,6 +164,9 @@ namespace Snake
                         FoodTimer = 0;
                     }
                     break;
+                case GameStatus.Reset:
+                    this.ResetGame();
+                    break;
                 default:
                     break;
             }
@@ -168,9 +174,9 @@ namespace Snake
 
         public void ResetSnakeGrid()
         {
-            for (int i = 0; i < Grid.GetLength(1); i++)
+            for (int i = 0; i < Grid.GetLength(0); i++)
             {
-                for (int j = 0; j < Grid.GetLength(0); j++)
+                for (int j = 0; j < Grid.GetLength(1); j++)
                 {
                     if(Grid[i, j] != 1)
                         Grid[i, j] = 0;
@@ -180,16 +186,26 @@ namespace Snake
 
         public void SetFood()
         {
-            if (CurrentFood < MaxFood)
+            if (CurrentFood >= MaxFood)
+                return;
+
+            List<(int col, int row)> freeCells = new();
+
+            for (int i = 0; i < Grid.GetLength(0); i++)
             {
-                int foodColumn = Random.Next(0, Grid.GetLength(1));
-                int foodRow = Random.Next(0, Grid.GetLength(0));
-                if (Grid[foodColumn, foodRow] != 1 && Grid[foodColumn, foodRow] != 2)
+                for (int j = 0; j < Grid.GetLength(1); j++)
                 {
-                    Grid[foodColumn, foodRow] = 1;
-                    CurrentFood++;
+                    if (Grid[i, j] == 0)
+                        freeCells.Add((i,j));
                 }
             }
+
+            if(freeCells.Count == 0) 
+                return;
+
+            var position = freeCells[Random.Next(freeCells.Count)];
+            Grid[position.col, position.row] = 1;
+            CurrentFood++;
         }
 
         public void SetSnakeGrid()
@@ -199,7 +215,7 @@ namespace Snake
             {
                 int col = (int)item.X / CellSize;
                 int row = (int)item.Y / CellSize;
-                if (col < Grid.GetLength(1) && row < Grid.GetLength(0) && col >= 0 && row >= 0)
+                if (col < Grid.GetLength(0) && row < Grid.GetLength(1) && col >= 0 && row >= 0)
                 {
                     Grid[col, row] = 2;
                 }
@@ -215,7 +231,7 @@ namespace Snake
 
         public void IsEndGame()
         {
-            if(Score == Columns * Rows)
+            if(SnakeBody.Count == Columns * Rows)
                 GameStatus = GameStatus.End;
         }
 
@@ -225,7 +241,7 @@ namespace Snake
             var head = SnakeBody.Last();
             int colHead = (int)head.X / CellSize;
             int rowHead = (int)head.Y / CellSize;
-            if(colHead < Grid.GetLength(1) &&  rowHead < Grid.GetLength(0) && colHead >= 0 && rowHead >= 0)
+            if(colHead < Grid.GetLength(0) &&  rowHead < Grid.GetLength(1) && colHead >= 0 && rowHead >= 0)
                 if (Grid[colHead, rowHead] == 1)
                 {
                     Grid[colHead, rowHead] = 0;
@@ -241,7 +257,7 @@ namespace Snake
             var head = SnakeBody.Last();
             int colHead = (int)head.X / CellSize;
             int rowHead = (int)head.Y / CellSize;
-            if (colHead >= Grid.GetLength(1) || rowHead >= Grid.GetLength(0) || colHead < 0 || rowHead < 0)
+            if (colHead >= Grid.GetLength(0) || rowHead >= Grid.GetLength(1) || colHead < 0 || rowHead < 0)
                 this.GameStatus = GameStatus.GameOver;
         }
 
@@ -269,9 +285,33 @@ namespace Snake
                     if (Raylib.IsKeyDown(KeyboardKey.C))
                         GameStatus = GameStatus.Playing;
                     break;
+                case GameStatus.GameOver:
+                case GameStatus.End:
+                    if (Raylib.IsKeyDown(KeyboardKey.R))
+                        GameStatus = GameStatus.Reset;
+                    break;
                 default:
                     break;
             }
+        }
+
+        private void ResetGame()
+        {
+            this.SnakeBody = new List<Vector2> { new Vector2(0, CellSize), new Vector2(CellSize, CellSize), new Vector2(CellSize * 2, CellSize) };
+            this.CurrentFood = 0;
+            this.Score = 0;
+            this.SnakeDirection = SnakeDirection.Right;
+            for (int i = 0; i < Grid.GetLength(0); i++)
+            {
+                for (int j = 0; j < Grid.GetLength(1); j++)
+                {
+                    Grid[i, j] = 0;
+                }
+            }
+            this.SetSnakeGrid();
+            this.MovementTimer = 0f;
+            this.FoodTimer = 0f;
+            this.GameStatus = GameStatus.Playing;
         }
     }
 }
